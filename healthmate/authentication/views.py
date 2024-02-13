@@ -2,6 +2,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
+from django.middleware.csrf import get_token
+from django.http import JsonResponse
+from django.contrib.auth.models import User
 # from django.http import HttpResponseForbidden
 # from .models import Chat, Message
 
@@ -9,6 +12,27 @@ from django.contrib.auth import authenticate, login, logout
 def home(request):
     return render(request, 'home.html')
 
+
+def get_csrf_token(request):
+    csrf_token = get_token(request)
+    return JsonResponse({'csrfToken': csrf_token})
+
+
+def check_login_status(request):
+    if request.user.is_authenticated:
+        return JsonResponse({'isLoggedIn': True})
+    else:
+        return JsonResponse({'isLoggedIn': False})
+
+
+def get_all_users(request):
+    if request.method == 'GET':
+        users = User.objects.all()
+        user_data = [{'username': user.username, 'email': user.email} for user in users]
+        return JsonResponse({'users': user_data})
+    else:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
 
 def sign_up(request):
     if request.method == 'POST':
@@ -31,10 +55,17 @@ def log_in(request):
         if form.is_valid():
             username = form.cleaned_data.get('username')
             password = form.cleaned_data.get('password')
+            print("Username:", username)
+            print("Password:", password)
             user = authenticate(username=username, password=password)
             if user is not None:
                 login(request, user)
-                return redirect('home')
+                return JsonResponse({'success': True, 'message': 'Authentication successful'})
+            else:
+                return JsonResponse({'success': False, 'message': 'Authentication failed'}, status=400)
+        else:
+            print("Form errors:", form.errors)
+            return JsonResponse({'success': False, 'errors': form.errors}, status=400)
     else:
         form = AuthenticationForm()
     return render(request, 'log_in.html', {'form': form})
