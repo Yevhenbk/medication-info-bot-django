@@ -5,8 +5,6 @@ from django.contrib.auth import authenticate, login, logout
 from django.middleware.csrf import get_token
 from django.http import JsonResponse
 from django.contrib.auth.models import User
-# from django.http import HttpResponseForbidden
-# from .models import Chat, Message
 
 
 def home(request):
@@ -43,7 +41,13 @@ def sign_up(request):
             password = form.cleaned_data.get('password1')
             user = authenticate(username=username, password=password)
             login(request, user)
-            return redirect('home') 
+            if user is not None:
+                login(request, user)
+                return JsonResponse({'success': True, 'message': 'Signup successful'})
+            else:
+                return JsonResponse({'success': False, 'message': 'Signup failed'}, status=400)
+        else:
+            return JsonResponse({'success': False, 'errors': form.errors}, status=400) 
     else:
         form = UserCreationForm()
     return render(request, 'sign_up.html', {'form': form})
@@ -55,8 +59,6 @@ def log_in(request):
         if form.is_valid():
             username = form.cleaned_data.get('username')
             password = form.cleaned_data.get('password')
-            print("Username:", username)
-            print("Password:", password)
             user = authenticate(username=username, password=password)
             if user is not None:
                 login(request, user)
@@ -64,7 +66,6 @@ def log_in(request):
             else:
                 return JsonResponse({'success': False, 'message': 'Authentication failed'}, status=400)
         else:
-            print("Form errors:", form.errors)
             return JsonResponse({'success': False, 'errors': form.errors}, status=400)
     else:
         form = AuthenticationForm()
@@ -73,7 +74,7 @@ def log_in(request):
 
 def log_out(request):
     logout(request)
-    return redirect('home')
+    return JsonResponse({'success': True, 'message': 'Logged out successfully'})
 
 
 @login_required
