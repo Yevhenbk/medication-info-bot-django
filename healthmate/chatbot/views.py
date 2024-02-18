@@ -2,6 +2,10 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from .models import Chat, Message
+import torch
+from transformers import pipeline
+
+question_answerer = pipeline("question-answering", model='deepset/roberta-base-squad2')
 
 
 @login_required
@@ -28,15 +32,20 @@ def create_message(request, chat_id):
         # Ensure the requesting user has access to the specified chat
         chat = Chat.objects.get(id=chat_id, user=request.user)
 
-        # Get the question and response from the POST data
+        # Get the question from the POST data
         user_question = request.POST.get('question', '')
-        ai_response = request.POST.get('response', '')
+
+        # Define the context (you may retrieve it from your dataset or other sources)
+        context = "Anna is 19 years old and lives in Paris."
+
+        # Generate response using the question answering pipeline
+        response = question_answerer(question=user_question, context=context)["answer"]
 
         # Create a new message
-        message = Message.objects.create(chat=chat, sender=request.user, question=user_question, response=ai_response)
+        message = Message.objects.create(chat=chat, sender=request.user, question=user_question, response=response)
 
-        # Return a success response
-        return JsonResponse({'success': True, 'message_id': message.id})
+        # Return the generated response
+        return JsonResponse({'success': True, 'message_id': message.id, 'response': response})
     except Chat.DoesNotExist:
         return JsonResponse({'error': 'Chat not found'}, status=404)
     except Exception as e:
