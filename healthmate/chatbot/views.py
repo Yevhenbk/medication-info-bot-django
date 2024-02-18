@@ -2,10 +2,9 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from .models import Chat, Message
-import torch
 from transformers import pipeline
-
-question_answerer = pipeline("question-answering", model='deepset/roberta-base-squad2')
+import requests
+import re
 
 
 @login_required
@@ -24,32 +23,92 @@ def chat_view(request):
     else:
         # Render the chat interface
         return render(request, 'chat.html')
+
+
+def get_medication_info(user_question):
+    try:
+        # Extract medication name and selected_info from the user's question
+        match = re.match(r"^(?P<medication_name>[\w\s]+),\s*(?P<selected_info>[\w\s]+)$", user_question.strip())
+        if match:
+            medication_name = match.group("medication_name")
+            selected_info = match.group("selected_info").lower()
+
+            if not selected_info:
+                # If selected_info is not specified, default to the entire formatted_info
+                selected_info = 'full_info'
+
+            # Replace spaces with underscores in selected_info
+            selected_info_key = selected_info.replace(' ', '_').lower()
+
+            endpoint = f'https://api.fda.gov/drug/label.json?api_key=t62Chde4gVkYohphhcmfh6VKb0aH4i2nBaSasURK&search=openfda.generic_name:{medication_name}&limit=1'
+
+            response = requests.get(endpoint)
+            response.raise_for_status()
+
+            data = response.json()
+
+            if 'results' in data and data['results']:
+                medication_data = data['results'][0]
+                formatted_info = format_medication_info(medication_data, selected_info_key)
+                return formatted_info
+            else:
+                return f"No information found for {medication_name}."
+
+        else:
+            return "Invalid input format. Please provide both medication name and selected information separated by a comma (e.g., Aspirin, Warnings)."
+
+    except requests.exceptions.RequestException as e:
+        return JsonResponse({'error': str(e)}, status=500)
     
+
+def format_medication_info(data, selected_info=None):
+    # Format the medication information for a user-friendly response
+    try:
+        formatted_info = f"Information about {data['openfda']['generic_name'][0]}:\n"
+
+        if not selected_info:
+            # If no specific info is selected, include all available information
+            formatted_info += f"Active Ingredient: {', '.join(data['active_ingredient'])}\n"
+            formatted_info += f"Purpose: {', '.join(data['purpose'])}\n"
+            formatted_info += f"Indications and Usage: {', '.join(data['indications_and_usage'])}\n"
+            formatted_info += f"\nWarnings: {', '.join(data['warnings'])}\n"
+            formatted_info += f"Do Not Use: {', '.join(data['do_not_use'])}\n"
+            formatted_info += f"Ask Doctor: {', '.join(data['ask_doctor'])}\n"
+            formatted_info += f"Ask Doctor or Pharmacist: {', '.join(data['ask_doctor_or_pharmacist'])}\n"
+            formatted_info += f"Stop Use: {', '.join(data['stop_use'])}\n"
+            formatted_info += f"Pregnancy and Breastfeeding: {', '.join(data['pregnancy_or_breast_feeding'])}\n"
+            formatted_info += f"Keep Out of Reach of Children: {', '.join(data['keep_out_of_reach_of_children'])}\n"
+            formatted_info += f"Dosage and Administration: {', '.join(data['dosage_and_administration'])}\n"
+            formatted_info += f"Storage and Handling: {', '.join(data['storage_and_handling'])}\n"
+        else:
+            # Include only the selected information
+            selected_info = selected_info.lower()
+            if selected_info in data:
+                formatted_info += f"{', '.join(data[selected_info])}\n"
+            else:
+                formatted_info += f"Selected information '{selected_info}' not found.\n"
+
+        return formatted_info
+    except KeyError:
+        return "Error formatting medication information."
+
 
 @login_required
 def create_message(request, chat_id):
     try:
-        # Ensure the requesting user has access to the specified chat
         chat = Chat.objects.get(id=chat_id, user=request.user)
-
-        # Get the question from the POST data
         user_question = request.POST.get('question', '')
 
-        # Define the context (you may retrieve it from your dataset or other sources)
-        context = "Anna is 19 years old and lives in Paris."
+        # Use the Medication Information chatbot
+        response = get_medication_info(user_question)
 
-        # Generate response using the question answering pipeline
-        response = question_answerer(question=user_question, context=context)["answer"]
-
-        # Create a new message
         message = Message.objects.create(chat=chat, sender=request.user, question=user_question, response=response)
 
-        # Return the generated response
         return JsonResponse({'success': True, 'message_id': message.id, 'response': response})
     except Chat.DoesNotExist:
         return JsonResponse({'error': 'Chat not found'}, status=404)
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({'error': str(e)}, status=500) 
 
 
 @login_required
