@@ -36,7 +36,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
 
-    'healthmate.cors_middleware.CorsMiddleware',
+    'pharmchat.cors_middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -49,7 +49,7 @@ MIDDLEWARE = [
     'allauth.account.middleware.AccountMiddleware',
 ]
 
-ROOT_URLCONF = 'healthmate.urls'
+ROOT_URLCONF = 'pharmchat.urls'
 
 TEMPLATES = [
     {
@@ -67,7 +67,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'healthmate.wsgi.application'
+WSGI_APPLICATION = 'pharmchat.wsgi.application'
 
 
 CSRF_TRUSTED_ORIGINS = [
