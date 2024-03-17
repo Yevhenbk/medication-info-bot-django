@@ -1,10 +1,19 @@
 # Django Chatbot Medication Information
 
-A Django-based chat application with a chatbot that provides medication information using the FDA drug label API.
+## Overview
+Pharmchat is a Django application designed to facilitate communication between users and an AI chatbot for medication information retrieval. It provides a user-friendly chat interface, stores chat data in the database, and enables users to create and manage chat sessions.
 
 ## Features
+- Chat Interface: Users can interact with the AI chatbot through a user-friendly chat interface.
 
-- User authentication with Django's built-in authentication system.
-- Chat interface for users to interact with the chatbot.
-- Chatbot functionality to retrieve medication information from the FDA drug label API.
-- Ability to create chats, send messages, and view chat history.
+- Medication Information Retrieval: The application retrieves medication information based on user queries and displays it in the chat interface.
+
+- Chat Data Storage: Pharmchat stores user interactions and medication information in the database for future reference.
+
+Session Management: Users can create and manage chat sessions, allowing them to organize conversations based on specific topics or purposes.
+
+Technologies Used
+Django
+Django REST Framework
+Transformers library
+Requests library
