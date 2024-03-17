@@ -5,11 +5,8 @@ Pharmchat is a Django application designed to facilitate communication between u
 
 ## Features
 - Chat Interface: Users can interact with the AI chatbot through a user-friendly chat interface.
-
 - Medication Information Retrieval: The application retrieves medication information based on user queries and displays it in the chat interface.
-
 - Chat Data Storage: Pharmchat stores user interactions and medication information in the database for future reference.
-
 - Session Management: Users can create and manage chat sessions, allowing them to organize conversations based on specific topics or purposes.
 
 ## Technologies Used
