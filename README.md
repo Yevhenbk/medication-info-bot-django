@@ -23,4 +23,4 @@ Pharmchat is a Django application designed to facilitate communication between u
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver
-``
+```
